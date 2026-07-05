@@ -1,0 +1,41 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# AI Dubbing — Chatterbox batch dubbing pipeline
+#
+# IMPORTANT (PyTorch + CUDA):
+#   `chatterbox-tts` pulls in a specific torch/torchaudio build. For GPU use,
+#   install the CUDA wheels FIRST (matching your CUDA), then chatterbox-tts.
+#   On the RTX 4080 box this was developed for (CUDA 12.x):
+#
+#     pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
+#     pip install chatterbox-tts
+#
+#   CPU-only fallback:
+#     pip install torch torchaudio
+#     pip install chatterbox-tts
+#
+#   See README.md / setup.ps1 for the full, tested install flow.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Core TTS (Resemble AI, MIT). Pinned to the version this pipeline was verified
+# against; the loader also introspects generate() so newer versions degrade
+# gracefully. Relax the pin if you want the latest.
+#   NOTE: for translating to a NON-English target you'd instead use
+#   chatterbox.mtl_tts.ChatterboxMultilingualTTS (language_id=...); the base
+#   English model used here is correct for the "translate -> English" path.
+chatterbox-tts==0.1.7
+
+# Torch is a transitive dep of chatterbox-tts, listed here for clarity.
+# (Install the CUDA build via the index-url above for GPU acceleration.)
+torch
+torchaudio
+
+# Subtitle parsing
+srt>=3.5.0
+
+# Audio I/O and array math
+soundfile>=0.12.1
+numpy
+
+# Config + CLI niceties
+PyYAML>=6.0
+tqdm>=4.66.0

@@ -1,0 +1,53 @@
+# AI Dubbing — example configuration.
+# Copy to config.yaml and edit, then run:  python dub.py --config config.yaml
+# Every key is optional; omitted keys use the defaults shown here.
+# CLI flags override anything set in this file.
+
+# ── paths ─────────────────────────────────────────────────────────────────────
+input_dir: mogoon          # folder of source videos (.m4v/.mp4/.mkv/...)
+output_dir: output         # dubbed .mp4 files go here
+subtitle_dir: null         # null = search recursively under input_dir (finds "EN SUBS")
+reference_wav: null        # path to a 5-10s narrator clip cloned across ALL videos; null = built-in voice
+cache_dir: .dub_cache      # per-cue TTS clips (resume after a crash)
+log_dir: logs              # run logs + capped-cue report
+
+# ── pairing & selection ───────────────────────────────────────────────────────
+match_strategy: episode    # "episode" (01<->[EN]Mogoon_01) or "stem" (exact filename match)
+only: []                   # e.g. ["01"] or ["01","bonus01"]; [] = all
+max_cues: null             # preview: voice only the first N cues per video; null = all
+
+# ── translation (SRTs assumed already English -> off) ─────────────────────────
+translate: false           # true -> run each cue through dubbing/translate.py first
+target_language: en
+source_language: null
+
+# ── Chatterbox TTS ────────────────────────────────────────────────────────────
+exaggeration: 0.5          # 0.5 neutral; ~0.7+ more expressive (also a touch faster)
+cfg_weight: 0.5            # 0.5 default; ~0.3 = slower, more deliberate pacing
+temperature: 0.8           # sampling temperature
+seed: null                 # int for reproducible generations
+
+# ── time-fitting & assembly ───────────────────────────────────────────────────
+max_atempo: 1.5            # hardest speed-up before a cue is flagged in the capped report
+min_atempo: 0.8            # gap control: slowest playback for SHORT clips (1.0=off; 0.8 default).
+                           #   fills time slots so narration flows instead of leaving gaps
+                           #   between lines (TTS speaks faster than the original speaker).
+                           #   lower = fills more aggressively (0.7, 0.6); higher/1.0 = more gaps
+extend_to_next_cue: true   # window = gap to next cue (more natural; slack -> trailing silence)
+min_window: 0.30           # floor (s) for a cue window, guards overlapping/zero-length cues
+sample_rate: 48000         # common working + output rate
+channels: 2                # 2 = stereo (safest "plays everywhere")
+
+# ── loudness & encoding ───────────────────────────────────────────────────────
+loudnorm_i: -16.0          # LUFS target (web/voiceover convention)
+loudnorm_tp: -1.5          # true-peak ceiling (dBTP)
+loudnorm_lra: 11.0         # loudness range
+audio_bitrate: 192k
+aac_codec: aac             # native ffmpeg AAC; broadly compatible
+
+# ── runtime ───────────────────────────────────────────────────────────────────
+device: cuda               # "cuda" or "cpu" (auto-falls back to cpu if no GPU)
+overwrite: false           # false = skip videos whose output already exists (idempotent)
+dry_run: false             # true = pair + report only, generate nothing
+skip_cue_patterns:         # cues matching any regex are left silent
+  - "turn off the subtitles"
