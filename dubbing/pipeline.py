@@ -178,9 +178,18 @@ def run_batch(cfg: Config) -> RunReport:
     log.info("Model ready (native %d Hz). Voice: %s",
              narrator.sample_rate, cfg.reference_wav or "built-in default")
 
+    interrupted = False
     for pair in pairing.pairs:
         try:
             result = process_video(pair, cfg, narrator, report)
+        except KeyboardInterrupt:
+            # Ctrl-C: stop the batch but still persist the partial report below.
+            # The in-flight video wrote nothing (mux is atomic) and its cues are
+            # cached, so resuming is cheap.
+            log.warning("Interrupted by user while processing %s — stopping. "
+                        "Re-run to resume from cache.", pair.video.name)
+            interrupted = True
+            break
         except Exception as exc:  # one bad video must not sink the batch
             log.exception("FAIL  %s: %s", pair.video.name, exc)
             result = VideoResult(video=pair.video.name, status="failed", error=str(exc))
@@ -189,7 +198,8 @@ def run_batch(cfg: Config) -> RunReport:
 
     paths = report.write(cfg.log_path)
     counts = report.counts()
-    log.info("Done. ok=%d skipped=%d failed=%d | capped cues=%d",
+    log.info("%s ok=%d skipped=%d failed=%d | capped cues=%d",
+             "Interrupted." if interrupted else "Done.",
              counts["ok"], counts["skipped"], counts["failed"], counts["capped_cues"])
     log.info("Summary: %s | Capped report: %s", paths["summary"], paths["capped"])
     return report

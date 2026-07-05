@@ -42,10 +42,13 @@ def main() -> int:
 
     pairing = pair_inputs(cfg)
 
-    # Idempotent: only videos that don't already have a complete output.
+    # Idempotent: only videos that don't already have a complete output. Match the
+    # name process_video() actually writes — previews (max_cues) go to a distinct
+    # ".preview.mp4" so they never satisfy the full-run skip and vice versa.
+    out_suffix = ".preview.mp4" if cfg.max_cues is not None else ".mp4"
     todo: list[str] = []
     for p in pairing.pairs:
-        out = cfg.output_path / f"{p.video.stem}.mp4"
+        out = cfg.output_path / f"{p.video.stem}{out_suffix}"
         if out.exists() and out.stat().st_size > 1024:
             continue
         todo.append(p.key)
